@@ -513,7 +513,7 @@ if __name__=="__main__":
     args = ap.parse_args()
     plot_stf(args.target) 
 
-
+    plot_tpdf()
 
 
 
