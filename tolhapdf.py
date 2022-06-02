@@ -32,6 +32,8 @@ cwd = os.getcwd()
 #--6: top
 #--21: gluon
 #--negative values for antiquarks
+iflavs = [-5,-4,-3,-2,-1,1,2,3,4,5,21]
+iflavs = [1,2]
 
 #--mode 0: plot each replica
 #--mode 1: plot average and standard deviation of replicas
@@ -76,7 +78,6 @@ def rename_tables(self,wdir,dirname,newname):
         p=Popen(cmd,  stdout=PIPE, stderr=STDOUT)
         output = p.stdout.read()
     print
-
 
 
 class QCF:
@@ -138,9 +139,7 @@ class QCF:
         return X,Q2
     
     def gen_grid(self,dist):
-        if    dist.startswith('pdf') : return self.gen_cj_grid()
-        elif  dist.startswith('ppdf'): return self.gen_cj_grid()
-        elif  dist.startswith('ff')  : return self.gen_cj_grid()
+        if    dist=='tpdf' : return self.gen_cj_grid()
     
     def _gen_table(self,dist):
     
@@ -151,28 +150,15 @@ class QCF:
         nQ2=len(Q2)
     
         #--fill table
-        table={iflav:[]  for iflav in [-5,-4,-3,-2,-1,1,2,3,4,5,21]}  
+        table={iflav:[]  for iflav in iflavs}  
         npts=nQ2*nx
         for iQ2 in range(nQ2):
             for ix in range(nx):
-                table[21].append(qpd.get_xF(X[ix],Q2[iQ2],'g'))
                 table[ 1].append(qpd.get_xF(X[ix],Q2[iQ2],'d'))
                 table[ 2].append(qpd.get_xF(X[ix],Q2[iQ2],'u'))
-                table[ 3].append(qpd.get_xF(X[ix],Q2[iQ2],'s'))
-                table[-1].append(qpd.get_xF(X[ix],Q2[iQ2],'db'))
-                table[-2].append(qpd.get_xF(X[ix],Q2[iQ2],'ub'))
-                table[-3].append(qpd.get_xF(X[ix],Q2[iQ2],'sb'))
-                if Q2[iQ2] < conf['aux'].mc2: q2 = conf['aux'].mc2+1 
-                else:                         q2 = Q2[iQ2]
-                table[ 4].append(qpd.get_xF(X[ix],q2,'c'))
-                table[-4].append(qpd.get_xF(X[ix],q2,'cb'))
-                if Q2[iQ2] < conf['aux'].mb2: q2 = conf['aux'].mb2+1 
-                else:                         q2 = Q2[iQ2]
-                table[ 5].append(qpd.get_xF(X[ix],q2,'b'))
-                table[-5].append(qpd.get_xF(X[ix],q2,'bb'))
 
         #--remap tables to match with lhapdf format
-        for iflav in [-5,-4,-3,-2,-1,1,2,3,4,5,21]: 
+        for iflav in iflavs: 
             new_list=[]
             for ix in range(nx):
                 for inQ2 in range(nQ2):
@@ -193,14 +179,15 @@ class QCF:
         line=''
         for _ in Q2: line+=('%10.5e '%_**0.5).upper()
         lines.append(line)
-        lines.append('-5 -4 -3 -2 -1 1 2 3 4 5 21')
+        #lines.append('-5 -4 -3 -2 -1 1 2 3 4 5 21')
+        lines.append('1 2')
    
         nx=len(X)
         nQ2=len(Q2)
     
         for i in range(nx*nQ2):
             line=''
-            for iflav in [-5,-4,-3,-2,-1,1,2,3,4,5,21]:
+            for iflav in iflavs:
                 line+=('%10.5e '%table[iflav][i]).upper()
             lines.append(line)
         lines.append('---')
@@ -210,7 +197,7 @@ class QCF:
         tab.writelines(lines)
         tab.close()
     
-    def gen_lhapdf_info_file(self,X,Q2,nrep, wdir, file_name,info):
+    def gen_lhapdf_info_file(self,X,Q2,nrep,wdir,dist,file_name,info):
     
         aS=[conf['alphaS'].get_alphaS(_) for _ in Q2]
         mZ=conf['aux'].mZ
@@ -232,7 +219,8 @@ class QCF:
         lines.append('DataVersion:     1')
         lines.append('NumMembers:      %d'%nrep)
         lines.append('Particle:        particle')
-        lines.append('Flavors:         [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 21]')
+        #lines.append('Flavors:         [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 21]')
+        lines.append('Flavors:         [1, 2]')
         lines.append('OrderQCD:        1')
         lines.append('FlavorScheme:    variable')
         lines.append('NumFlavors:      5')
@@ -261,7 +249,10 @@ class QCF:
         lines.append(line)
         lines.append('AlphaS_Lambda4: 0')
         lines.append('AlphaS_Lambda5: 0')
-    
+        if dist=='...':
+            lines.append('widths:...')
+
+ 
         for i in range(len(lines)):
             for _ in info:
                 lines[i]=lines[i].replace(_,info[_])
@@ -298,11 +289,11 @@ class QCF:
         #--gen_lhapdf_info_file
         X,Q2=self.gen_grid(dist)
         nrep=len(replicas)
-        self.gen_lhapdf_info_file(X,Q2,nrep, wdir, file_name,info)
+        self.gen_lhapdf_info_file(X,Q2,nrep,wdir,dist,file_name,info)
 
         #--gen lhapdf_data_files
         TABLE = {}
-        for iflav in [-5,-4,-3,-2,-1,1,2,3,4,5,21]:
+        for iflav in iflavs:
             TABLE[iflav] = []
         if info_only==False:
             cnt=0
@@ -310,216 +301,51 @@ class QCF:
                 lprint('progress: %d/%d'%(cnt+1,len(replicas)))
                 parman.set_new_params(par)
                 X,Q2,table = self._gen_table(dist)
-                for iflav in [-5,-4,-3,-2,-1,1,2,3,4,5,21]:
+                for iflav in iflavs:
                     TABLE[iflav].append(table[iflav])
                 self.gen_lhapdf_dat_file(X,Q2,table, wdir, file_name,cnt+1)
                 cnt+=1
             print()
        
         #--save mean value with index 0000 
-        for iflav in [-5,-4,-3,-2,-1,1,2,3,4,5,21]:
+        for iflav in iflavs:
             TABLE[iflav] = np.mean(TABLE[iflav],axis=0)
         self.gen_lhapdf_dat_file(X,Q2,table, wdir, file_name,0)
 
         print('Saving LHAPDF table to %s/data/%s'%(wdir,file_name))
 
         #--load and plot the QCF
-        if   dist=='pdf':    self.plot_pdfs  (wdir,file_name,Q2=10.0,mode=0)
-        elif dist=='ppdf':   self.plot_ppdfs (wdir,file_name,Q2=10.0,mode=0)
-        elif dist=='ffpion': self.plot_ffpion(wdir,file_name,Q2=10.0,mode=0)
-        elif dist=='ffkaon': self.plot_ffkaon(wdir,file_name,Q2=10.0,mode=0)
-
-        if   dist=='pdf':    self.plot_pdfs  (wdir,file_name,Q2=10.0,mode=1)
-        elif dist=='ppdf':   self.plot_ppdfs (wdir,file_name,Q2=10.0,mode=1)
-        elif dist=='ffpion': self.plot_ffpion(wdir,file_name,Q2=10.0,mode=1)
-        elif dist=='ffkaon': self.plot_ffkaon(wdir,file_name,Q2=10.0,mode=1)
+        if   dist=='tpdf':    self.plot_tpdfs  (wdir,file_name,Q2=4,mode=0)
+        if   dist=='tpdf':    self.plot_tpdfs  (wdir,file_name,Q2=4,mode=1)
       
-    def plot_pdfs(self,wdir,file_name,Q2,mode=0):
+    def plot_tpdfs(self,wdir,file_name,Q2,mode=0):
     
-        nrows,ncols=3,2
+        nrows,ncols=1,2
         fig = py.figure(figsize=(ncols*7,nrows*4))
         ax11=py.subplot(nrows,ncols,1)
         ax12=py.subplot(nrows,ncols,2)
-        ax21=py.subplot(nrows,ncols,3)
-        ax22=py.subplot(nrows,ncols,4)
-        ax31=py.subplot(nrows,ncols,5)
-        ax32=py.subplot(nrows,ncols,6)
     
         hand = {}
    
-        os.environ["LHAPDF_DATA_PATH"] = '/w/jam-sciwork18/ccocuzza/analysis-hx/%s/data'%(wdir)
-        PDF = lhapdf.mkPDFs(file_name)
+        os.environ["LHAPDF_DATA_PATH"] = '/w/jam-sciwork18/ccocuzza/WormGearLHAPDF/%s/data'%(wdir)
+        QCF = lhapdf.mkPDFs(file_name)
         nrep = len(PDF)
     
-        flavs = ['uv','dv','g','db+ub','db-ub','s+sb','Rs']
+        flavs = ['u','d']
         data = {flav: [] for flav in flavs} 
     
         for i in range(nrep):
             #--skip mean value
             if i==0: continue
-            d =  np.array([PDF[i].xfxQ2( 1,x,Q2) for x in X])
-            u =  np.array([PDF[i].xfxQ2( 2,x,Q2) for x in X])
-            s =  np.array([PDF[i].xfxQ2( 3,x,Q2) for x in X])
-            db = np.array([PDF[i].xfxQ2(-1,x,Q2) for x in X])
-            ub = np.array([PDF[i].xfxQ2(-2,x,Q2) for x in X])
-            sb = np.array([PDF[i].xfxQ2(-3,x,Q2) for x in X])
-            g  = np.array([PDF[i].xfxQ2(21,x,Q2) for x in X])
-            data['uv'].append(u-ub)
-            data['dv'].append(d-db)
-            data['g'] .append(g)
-            data['db+ub'].append(db+ub)
-            data['db-ub'].append(db-ub)
-            data['s+sb'].append(s+sb)
-            data['Rs'].append((s+sb)/(db+ub))
+            d =  np.array([QCF[i].xfxQ2( 1,x,Q2) for x in X])
+            u =  np.array([QCF[i].xfxQ2( 2,x,Q2) for x in X])
+            data['d'].append(d)
+            data['u'].append(u)
             
         for flav in data:
     
-            if flav=='uv' or flav=='dv': ax = ax11
-            elif flav=='g':              ax = ax12
-            elif flav=='db+ub':          ax = ax21
-            elif flav=='db-ub':          ax = ax22
-            elif flav=='s+sb':           ax = ax31
-            elif flav=='Rs':             ax = ax32
-    
-            mean = np.mean(data[flav],axis=0)
-            std  = np.std (data[flav],axis=0)
-    
-            if mode==0:
-                for i in range(nrep-1):
-    
-                    if flav=='g': data[flav][i] /= 10.0
-    
-                    ax.plot(X,data[flav][i],color='red',alpha=0.1)
-     
-            #--plot average and standard deviation
-            if mode==1:
-                if flav=='g':
-                    mean /= 10.0
-                    std  /= 10.0
-    
-                where = [1 for i in range(len(X))]
-                if flav=='Rs':
-                    where = []
-                    for x in X:
-                        if x < 0.2: where.append(1)
-                        if x > 0.2: where.append(0)
-    
-                ax.fill_between(X,mean-std,mean+std,color='red',alpha=0.9,where=where)
-    
-    
-        for ax in [ax11,ax12,ax21,ax22,ax31,ax32]:
-              ax.set_xlim(1e-2,1)
-              ax.semilogx()
-                
-              ax.tick_params(axis='both', which='major', top=True, right=True, direction='in',labelsize=30,length=10)
-              ax.tick_params(axis='both', which='minor', top=True, right=True, direction='in',labelsize=30,length=5)
-              ax.set_xticks([0.01,0.1,1])
-              ax.set_xticklabels([r'$0.01$',r'$0.1$',r'$1$'])
-    
-        ax11.tick_params(axis='both', which='both', labelbottom=False)
-        ax12.tick_params(axis='both', which='both', labelbottom=False)
-        ax21.tick_params(axis='both', which='both', labelbottom=False)
-        ax22.tick_params(axis='both', which='both', labelbottom=False)
-    
-        ax11.set_ylim(0,0.7)
-        ax12.set_ylim(0,0.5)
-        ax21.set_ylim(-0.05,0.7)
-        ax22.set_ylim(-0.04,0.08)
-        ax31.set_ylim(0,0.7)
-        ax32.set_ylim(0,1.2)
-    
-        ax11.set_yticks([0.2,0.4,0.6])
-        ax12.set_yticks([0.2,0.4])
-        ax21.set_yticks([0,0.2,0.4,0.6])
-        ax22.set_yticks([-0.02,0,0.02,0.04,0.06])
-        ax31.set_yticks([0.2,0.4,0.6])
-        ax32.set_yticks([0.5,1.0])
-    
-        minorLocator = MultipleLocator(0.05)
-        ax11.yaxis.set_minor_locator(minorLocator)
-        ax12.yaxis.set_minor_locator(minorLocator)
-        ax21.yaxis.set_minor_locator(minorLocator)
-        ax31.yaxis.set_minor_locator(minorLocator)
-        minorLocator = MultipleLocator(0.005)
-        ax22.yaxis.set_minor_locator(minorLocator)
-        minorLocator = MultipleLocator(0.1)
-        ax32.yaxis.set_minor_locator(minorLocator)
-    
-        for ax in [ax31,ax32]:
-            ax.set_xlabel(r'\boldmath$x$' ,size=30)
-            ax.xaxis.set_label_coords(0.80,0.00)
-    
-        ax11.text(0.85 ,0.50  ,r'\boldmath{$xu_{v}$}'            , transform=ax11.transAxes,size=30)
-        ax11.text(0.60 ,0.20  ,r'\boldmath{$xd_{v}$}'            , transform=ax11.transAxes,size=30)
-        ax12.text(0.65 ,0.25  ,r'\boldmath{$xg/10$}'             , transform=ax12.transAxes,size=30)
-        ax21.text(0.10 ,0.20  ,r'\boldmath{$x(\bar{d}+\bar{u})$}', transform=ax21.transAxes,size=30)
-        ax22.text(0.20 ,0.10  ,r'\boldmath{$x(\bar{d}-\bar{u})$}', transform=ax22.transAxes,size=30)
-        ax31.text(0.50 ,0.40  ,r'\boldmath{$x(s+\bar{s})$}',       transform=ax31.transAxes,size=30)
-        ax32.text(0.05 ,0.05  ,r'\boldmath{$R_s$}',       transform=ax32.transAxes,size=30)
-    
-        if Q2 == 1.27**2: ax12.text(0.05,0.08,r'$Q^2 = m_c^2$'                                  , transform=ax12.transAxes,size=30)
-        else:             ax12.text(0.05,0.08,r'$Q^2 = %s$'%Q2 + ' ' + r'\textrm{GeV}' + r'$^2$', transform=ax12.transAxes,size=30)
-    
-        ax21.axhline(0.0,ls='--',color='black',alpha=0.5)
-        ax22.axhline(0.0,ls='--',color='black',alpha=0.5)
-        ax32.axvline(0.2,ls='--',color='black',alpha=0.5)
-    
-        py.tight_layout()
-        py.subplots_adjust(hspace = 0, wspace = 0.20)
-    
-        filename = '%s/gallery/lhapdf-pdfs-Q2=%3.5f'%(wdir,Q2)
-        if mode==1: filename += '-bands'
-        filename+='.png'
-    
-        py.savefig(filename)
-        py.clf()
-        print ('Saving figure to %s'%filename)
-
-    def plot_ppdfs(self,wdir,file_name,Q2,mode=0):
-    
-        nrows,ncols=3,2
-        fig = py.figure(figsize=(ncols*7,nrows*4))
-        ax11=py.subplot(nrows,ncols,1)
-        ax12=py.subplot(nrows,ncols,2)
-        ax21=py.subplot(nrows,ncols,3)
-        ax22=py.subplot(nrows,ncols,4)
-        ax31=py.subplot(nrows,ncols,5)
-        ax32=py.subplot(nrows,ncols,6)
-    
-        hand = {}
-   
-        os.environ["LHAPDF_DATA_PATH"] = '/w/jam-sciwork18/ccocuzza/analysis-hx/%s/data'%(wdir)
-        PPDF = lhapdf.mkPDFs(file_name)
-        nrep = len(PPDF)
-    
-        flavs = ['up','dp','g','ub','db','sp']
-        data = {flav: [] for flav in flavs} 
-    
-        for i in range(nrep):
-            #--skip mean value
-            if i==0: continue
-            d =  np.array([PPDF[i].xfxQ2( 1,x,Q2) for x in X])
-            u =  np.array([PPDF[i].xfxQ2( 2,x,Q2) for x in X])
-            s =  np.array([PPDF[i].xfxQ2( 3,x,Q2) for x in X])
-            db = np.array([PPDF[i].xfxQ2(-1,x,Q2) for x in X])
-            ub = np.array([PPDF[i].xfxQ2(-2,x,Q2) for x in X])
-            sb = np.array([PPDF[i].xfxQ2(-3,x,Q2) for x in X])
-            g  = np.array([PPDF[i].xfxQ2(21,x,Q2) for x in X])
-            data['up'].append(u+ub)
-            data['dp'].append(d+db)
-            data['g'] .append(g)
-            data['ub'].append(ub)
-            data['db'].append(db)
-            data['sp'].append(s+sb)
-            
-        for flav in data:
-    
-            if   flav=='up':  ax = ax11
-            elif flav=='dp':  ax = ax12
-            elif flav=='g':   ax = ax21
-            elif flav=='sp':  ax = ax22
-            elif flav=='ub':  ax = ax31
-            elif flav=='db':  ax = ax32
+            if   flav=='u': ax = ax11
+            elif flav=='d': ax = ax12
     
             mean = np.mean(data[flav],axis=0)
             std  = np.std (data[flav],axis=0)
@@ -533,58 +359,43 @@ class QCF:
                 ax.fill_between(X,mean-std,mean+std,color='red',alpha=0.9)
     
     
-        for ax in [ax11,ax12,ax21,ax22,ax31,ax32]:
-              ax.set_xlim(1e-2,1)
-              ax.semilogx()
+        for ax in [ax11,ax12]:
+              ax.set_xlim(0,1)
                 
               ax.tick_params(axis='both', which='major', top=True, right=True, direction='in',labelsize=30,length=10)
               ax.tick_params(axis='both', which='minor', top=True, right=True, direction='in',labelsize=30,length=5)
-              ax.set_xticks([0.01,0.1,1])
-              ax.set_xticklabels([r'$0.01$',r'$0.1$',r'$1$'])
+              ax.set_xticks([0.2,0.4,0.6,0.8])
+              #ax.set_xticklabels([r'$0.01$',r'$0.1$',r'$1$'])
     
-        ax11.tick_params(axis='both', which='both', labelbottom=False)
-        ax12.tick_params(axis='both', which='both', labelbottom=False)
-        ax21.tick_params(axis='both', which='both', labelbottom=False)
-        ax22.tick_params(axis='both', which='both', labelbottom=False)
+        ax11.set_ylim(-0.1,0.6)
+        ax12.set_ylim(-0.3,0.2)
     
-    
-        ax11.set_ylim(-0.10,0.50)   
-        ax12.set_ylim(-0.20,0.10)   
-        ax21.set_ylim(-0.30,0.40)  
-        ax22.set_ylim(-0.07,0.15)
-        ax31.set_ylim(-0.07,0.15)
-        ax32.set_ylim(-0.07,0.15)
-
         ax11.set_yticks([0,0.2,0.4])
-        ax12.set_yticks([-0.15,-0.10,-0.05,0,0.05])
-        ax21.set_yticks([-0.2,0.0,0.2])
-        ax22.set_yticks([-0.04,0.00,0.04,0.08,0.12])
-        ax31.set_yticks([-0.04,0.00,0.04,0.08,0.12])
-        ax32.set_yticks([-0.04,0.00,0.04,0.08,0.12])
-
-        for ax in [ax11,ax12,ax21,ax22,ax31,ax32]:
-            ax.axhline(0  ,color='k',linestyle='--',alpha=0.5)
-            ax.axvline(0.1,color='k',linestyle=':' ,alpha=0.5)
-
-        ax31.set_xlabel(r'\boldmath$x$',size=30)
-        ax32.set_xlabel(r'\boldmath$x$',size=30)   
-        ax31.xaxis.set_label_coords(0.95,0.00)
-        ax32.xaxis.set_label_coords(0.95,0.00)
-
-        ax11.text(0.10,0.80,r'\boldmath{$x \Delta u^+$}',                        transform=ax11.transAxes,size=30)
-        ax12.text(0.10,0.80,r'\boldmath{$x \Delta d^+$}',                        transform=ax12.transAxes,size=30)
-        ax21.text(0.10,0.85,r'\boldmath{$x \Delta g$}'  ,                        transform=ax21.transAxes,size=30)
-        ax22.text(0.10,0.80,r'\boldmath{$x \Delta s^+$}',                        transform=ax22.transAxes,size=30)
-        ax31.text(0.10,0.80,r'\boldmath{$x \Delta \bar{u}$}',                    transform=ax31.transAxes,size=30)
-        ax32.text(0.10,0.80,r'\boldmath{$x \Delta \bar{d}$}',                    transform=ax32.transAxes,size=30)
-
-        if Q2 == 1.27**2: ax11.text(0.05,0.60,r'$Q^2 = m_c^2$',                            transform=ax11.transAxes,size=20)
-        else:             ax11.text(0.05,0.60,r'$Q^2 = %s$~'%Q2 + r'\textrm{GeV}'+r'$^2$', transform=ax11.transAxes,size=20)
-
+        ax12.set_yticks([-0.2,-0.1,0])
+    
+        minorLocator = MultipleLocator(0.05)
+        ax11.yaxis.set_minor_locator(minorLocator)
+        ax12.yaxis.set_minor_locator(minorLocator)
+    
+        for ax in [ax11,ax12]:
+            ax.set_xlabel(r'\boldmath$x$' ,size=30)
+            ax.xaxis.set_label_coords(0.90,0.00)
+    
+        ax11.text(0.85 ,0.50  ,r'\boldmath{$u$}'            , transform=ax11.transAxes,size=30)
+        ax12.text(0.60 ,0.20  ,r'\boldmath{$d$}'            , transform=ax12.transAxes,size=30)
+   
+        ax11.set_ylabel(r'$xh_1(x)$',size=30)
+ 
+        if Q2 == 1.27**2: ax12.text(0.05,0.08,r'$Q^2 = m_c^2$'                                  , transform=ax12.transAxes,size=30)
+        else:             ax12.text(0.05,0.08,r'$Q^2 = %s$'%Q2 + ' ' + r'\textrm{GeV}' + r'$^2$', transform=ax12.transAxes,size=30)
+    
+        ax11.axhline(0.0,ls='--',color='black',alpha=0.5)
+        ax12.axhline(0.0,ls='--',color='black',alpha=0.5)
+    
         py.tight_layout()
         py.subplots_adjust(hspace = 0, wspace = 0.20)
     
-        filename = '%s/gallery/lhapdf-ppdfs-Q2=%3.5f'%(wdir,Q2)
+        filename = '%s/gallery/lhapdf-tpdfs-Q2=%3.5f'%(wdir,Q2)
         if mode==1: filename += '-bands'
         filename+='.png'
     
@@ -592,499 +403,176 @@ class QCF:
         py.clf()
         print ('Saving figure to %s'%filename)
 
-    def plot_ffpion(self,wdir,file_name,Q2,mode=0):
+    def plot_f1T(self,wdir,file_name,Q2,mode=0):
     
         nrows,ncols=1,2
-        fig = py.figure(figsize=(ncols*7,nrows*5))
+        fig = py.figure(figsize=(ncols*7,nrows*4))
         ax11=py.subplot(nrows,ncols,1)
         ax12=py.subplot(nrows,ncols,2)
     
         hand = {}
    
-        os.environ["LHAPDF_DATA_PATH"] = '/w/jam-sciwork18/ccocuzza/analysis-hx/%s/data'%(wdir)
-        FFPION = lhapdf.mkPDFs(file_name)
-        nrep = len(FFPION)
+        os.environ["LHAPDF_DATA_PATH"] = '/w/jam-sciwork18/ccocuzza/WormGearLHAPDF/%s/data'%(wdir)
+        QCF = lhapdf.mkPDFs(file_name)
+        nrep = len(PDF)
     
-        flavs = ['up','u','ub','sp','g','c','b']
+        flavs = ['u','d']
         data = {flav: [] for flav in flavs} 
     
         for i in range(nrep):
             #--skip mean value
             if i==0: continue
-            d =  np.array([FFPION[i].xfxQ2( 1,x,Q2) for x in X])
-            u =  np.array([FFPION[i].xfxQ2( 2,x,Q2) for x in X])
-            s =  np.array([FFPION[i].xfxQ2( 3,x,Q2) for x in X])
-            c  = np.array([FFPION[i].xfxQ2( 4,x,Q2) for x in X])
-            b  = np.array([FFPION[i].xfxQ2( 5,x,Q2) for x in X])
-            db = np.array([FFPION[i].xfxQ2(-1,x,Q2) for x in X])
-            ub = np.array([FFPION[i].xfxQ2(-2,x,Q2) for x in X])
-            sb = np.array([FFPION[i].xfxQ2(-3,x,Q2) for x in X])
-            g  = np.array([FFPION[i].xfxQ2(21,x,Q2) for x in X])
-            data['up'].append(u+ub)
-            data['u'] .append(u)
-            data['ub'].append(ub)
-            data['sp'].append(s+sb)
-            data['g'] .append(g)
-            data['c'] .append(c)
-            data['b'] .append(b)
-
-        for flav in data:
-    
-            if flav=='up': ax,color = ax11,'blue'
-            if flav=='ub': ax,color = ax11,'green'
-            if flav=='u':  ax,color = ax11,'red'
-            if flav=='sp': ax,color = ax11,'magenta'
-            if flav=='g':  ax,color = ax12,'blue'
-            if flav=='c':  ax,color = ax12,'green'
-            if flav=='b':  ax,color = ax12,'red'
-    
-            mean = np.mean(data[flav],axis=0)
-            std  = np.std (data[flav],axis=0)
-    
-            if mode==0:
-                for i in range(nrep-1):
-                    hand[flav] ,= ax.plot(X,data[flav][i],color=color,alpha=0.1)
-     
-            #--plot average and standard deviation
-            if mode==1:
-                hand[flav] = ax.fill_between(X,mean-std,mean+std,color=color,alpha=0.9)
-    
-        for ax in [ax11,ax12]:
-              ax.set_xlabel(r'\boldmath$z$'    ,size=40)
-              ax.tick_params(axis='both', which='major', top=True, right=True, direction='in',labelsize=30,length=10)
-              ax.tick_params(axis='both', which='minor', top=True, right=True, direction='in',labelsize=30,length=5)
-              ax.xaxis.set_label_coords(0.98,0.00)
-              ax.set_xlim(0.2,0.90)
-              ax.set_xticks([0.2,0.4,0.6,0.8])
-              ax.set_ylim(0,0.8)
-              ax.set_yticks([0.2,0.4,0.6,0.8])
-              minorLocator = MultipleLocator(0.05)
-              ax.xaxis.set_minor_locator(minorLocator)
-              minorLocator = MultipleLocator(0.05)
-              ax.yaxis.set_minor_locator(minorLocator)
-
-
-        ax12.text(0.65 ,0.75  ,r'\boldmath$z D^{\pi^+}_q$'   ,transform=ax12.transAxes,size=50)
-
-        if Q2 == 1.27**2: ax12.text(0.55,0.60,r'$Q^2 = m_c^2$'                                  , transform=ax12.transAxes,size=30)
-        else:             ax12.text(0.55,0.60,r'$Q^2 = %s$'%Q2 + ' ' + r'\textrm{GeV}' + r'$^2$', transform=ax12.transAxes,size=30)
-
-
-        handles,labels = [],[]
-        handles.append(hand['up'])
-        handles.append(hand['u'])
-        handles.append(hand['ub'])
-        handles.append(hand['sp'])
-        labels.append(r'\boldmath$u^+$')
-        labels.append(r'\boldmath$u$')
-        labels.append(r'\boldmath$\bar{u}$')
-        labels.append(r'\boldmath$s^+$')
-        ax11.legend(handles,labels,loc='upper right', fontsize = 28, frameon = 0, handletextpad = 0.3, handlelength = 1.0)
-
-        handles,labels = [],[]
-        handles.append(hand['g'])
-        handles.append(hand['c'])
-        handles.append(hand['b'])
-        labels.append(r'\boldmath$g$')
-        labels.append(r'\boldmath$c$')
-        labels.append(r'\boldmath$b$')
-        ax12.legend(handles,labels,loc='lower right', fontsize = 28, frameon = 0, handletextpad = 0.3, handlelength = 1.0)
-
-        py.tight_layout()
-
-        filename = '%s/gallery/lhapdf-ffpion-Q2=%3.5f'%(wdir,Q2)
-        if mode==1: filename += '-bands'
-        filename+='.png'
-    
-        py.savefig(filename)
-        py.clf()
-        print ('Saving figure to %s'%filename)
-
-    def plot_ffkaon(self,wdir,file_name,Q2,mode=0):
-    
-        nrows,ncols=1,2
-        fig = py.figure(figsize=(ncols*7,nrows*5))
-        ax11=py.subplot(nrows,ncols,1)
-        ax12=py.subplot(nrows,ncols,2)
-    
-        hand = {}
-   
-        os.environ["LHAPDF_DATA_PATH"] = '/w/jam-sciwork18/ccocuzza/analysis-hx/%s/data'%(wdir)
-        FFKAON = lhapdf.mkPDFs(file_name)
-        nrep = len(FFKAON)
-    
-        flavs = ['sp','s','up','dp','g','c','b']
-        data = {flav: [] for flav in flavs} 
-    
-        for i in range(nrep):
-            #--skip mean value
-            if i==0: continue
-            d =  np.array([FFKAON[i].xfxQ2( 1,x,Q2) for x in X])
-            u =  np.array([FFKAON[i].xfxQ2( 2,x,Q2) for x in X])
-            s =  np.array([FFKAON[i].xfxQ2( 3,x,Q2) for x in X])
-            c  = np.array([FFKAON[i].xfxQ2( 4,x,Q2) for x in X])
-            b  = np.array([FFKAON[i].xfxQ2( 5,x,Q2) for x in X])
-            db = np.array([FFKAON[i].xfxQ2(-1,x,Q2) for x in X])
-            ub = np.array([FFKAON[i].xfxQ2(-2,x,Q2) for x in X])
-            sb = np.array([FFKAON[i].xfxQ2(-3,x,Q2) for x in X])
-            g  = np.array([FFKAON[i].xfxQ2(21,x,Q2) for x in X])
-            data['sp'].append(s+sb)
-            data['up'].append(u+ub)
-            data['dp'].append(d+db)
-            data['s'] .append(s)
-            data['g'] .append(g)
-            data['c'] .append(c)
-            data['b'] .append(b)
+            d =  np.array([QCF[i].xfxQ2( 1,x,Q2) for x in X])
+            u =  np.array([QCF[i].xfxQ2( 2,x,Q2) for x in X])
+            data['d'].append(d)
+            data['u'].append(u)
             
         for flav in data:
     
-            if flav=='sp': ax,color = ax11,'blue'
-            if flav=='s':  ax,color = ax11,'green'
-            if flav=='up': ax,color = ax11,'red'
-            if flav=='dp': ax,color = ax11,'magenta'
-            if flav=='g':  ax,color = ax12,'blue'
-            if flav=='c':  ax,color = ax12,'green'
-            if flav=='b':  ax,color = ax12,'red'
-
+            if   flav=='u': ax = ax11
+            elif flav=='d': ax = ax12
+    
             mean = np.mean(data[flav],axis=0)
             std  = np.std (data[flav],axis=0)
     
             if mode==0:
                 for i in range(nrep-1):
-                    hand[flav] ,= ax.plot(X,data[flav][i],color=color,alpha=0.1)
+                    ax.plot(X,data[flav][i],color='red',alpha=0.1)
      
             #--plot average and standard deviation
             if mode==1:
-                hand[flav] = ax.fill_between(X,mean-std,mean+std,color=color,alpha=0.9)
+                ax.fill_between(X,mean-std,mean+std,color='red',alpha=0.9)
+    
     
         for ax in [ax11,ax12]:
-              ax.set_xlabel(r'\boldmath$z$'    ,size=40)
+              ax.set_xlim(0,0.8)
+                
               ax.tick_params(axis='both', which='major', top=True, right=True, direction='in',labelsize=30,length=10)
               ax.tick_params(axis='both', which='minor', top=True, right=True, direction='in',labelsize=30,length=5)
-              ax.xaxis.set_label_coords(0.98,0.00)
-              ax.set_xlim(0.2,0.90)
-              ax.set_xticks([0.2,0.4,0.6,0.8])
-              ax.set_ylim(0,0.4)
-              ax.set_yticks([0.1,0.2,0.3,0.4])
-              minorLocator = MultipleLocator(0.05)
-              ax.xaxis.set_minor_locator(minorLocator)
-              minorLocator = MultipleLocator(0.05)
-              ax.yaxis.set_minor_locator(minorLocator)
-
-
-        ax12.text(0.65 ,0.75  ,r'\boldmath$z D^{K^+}_q$'   ,transform=ax12.transAxes,size=50)
-
-        if Q2 == 1.27**2: ax12.text(0.55,0.60,r'$Q^2 = m_c^2$'                                  , transform=ax12.transAxes,size=30)
-        else:             ax12.text(0.55,0.60,r'$Q^2 = %s$'%Q2 + ' ' + r'\textrm{GeV}' + r'$^2$', transform=ax12.transAxes,size=30)
-
-
-        handles,labels = [],[]
-        handles.append(hand['sp'])
-        handles.append(hand['s'])
-        handles.append(hand['up'])
-        handles.append(hand['dp'])
-        labels.append(r'\boldmath$s^+$')
-        labels.append(r'\boldmath$s$')
-        labels.append(r'\boldmath$u^+$')
-        labels.append(r'\boldmath$d^+$')
-        ax11.legend(handles,labels,loc='upper right', fontsize = 28, frameon = 0, handletextpad = 0.3, handlelength = 1.0)
-
-        handles,labels = [],[]
-        handles.append(hand['g'])
-        handles.append(hand['c'])
-        handles.append(hand['b'])
-        labels.append(r'\boldmath$g$')
-        labels.append(r'\boldmath$c$')
-        labels.append(r'\boldmath$b$')
-        ax12.legend(handles,labels,loc='lower right', fontsize = 28, frameon = 0, handletextpad = 0.3, handlelength = 1.0)
-
-
-
-        py.tight_layout()
-
-        filename = '%s/gallery/lhapdf-ffkaon-Q2=%3.5f'%(wdir,Q2)
-        if mode==1: filename += '-bands'
-
-        filename+='.png'
-        checkdir('%s/gallery'%wdir)
-        py.savefig(filename)
-        py.clf()
-        print ('Saving figure to %s'%filename)
-
-
-
-def plot_ht(mode=0):
-
-    nrows,ncols=1,1
-    fig = py.figure(figsize=(ncols*8,nrows*5))
-    ax11 = py.subplot(nrows,ncols,1) 
-
-    hand = {}
-
-
-    #--collect data from different groups
-    Q2 = 10
-    data = {}
-    for tar in ['p','n']:
-        data[tar] = []
-        if tar == 'p': tabname, color = 'JAM21PDF-HT_proton' , 'firebrick'
-        if tar == 'n': tabname, color = 'JAM21PDF-HT_neutron', 'darkgreen'
-        HT = lhapdf.mkPDFs(tabname)
-        nrep = len(HT)
-        for i in range(nrep):
-            ht = np.array([HT[i].xfxQ2(908,x,Q2) for x in X])
-            data[tar].append(ht)
-
-        if mode == 0:
-            for i in range(nrep):
-                hand[tar] ,= ax11.plot(X,data[tar][i],color=color,alpha=0.1)
-
-        if mode == 1:
-            mean = np.mean(np.array(data[tar]),axis=0)
-            std  = np.std (np.array(data[tar]),axis=0)
-            hand[tar] = ax11.fill_between(X,mean-std,mean+std,color=color,alpha=0.9)
-        
-
-    h0 =-3.2874
-    h1 = 1.9274
-    h2 =-2.0701
-    ht = h0*X**h1*(1+h2*X)
-    hand['CJ15'] ,= ax11.plot(X,ht,'b--')
-
-    ax11.set_ylim(-0.4,2)
-
-    ax11.text(0.05,0.25,r'\boldmath$H^N$',transform=ax11.transAxes,size=40)
-
-    ax11.tick_params(axis='both',which='both',top=True,right=True,direction='in',labelsize=30)
-
-    ax11.set_xlim(0,1)
-    ax11.set_xlabel(r'\boldmath$x$',size=30)
-    ax11.xaxis.set_label_coords(0.95,0.00)
-
-    ax11.axhline(0,0,1,ls='--',color='black',alpha=0.5)
-
-    ax11.text(0.75,0.05,r'\textbf{\textrm{AOT}}',size=30,transform=ax11.transAxes)
-
-    for ax in [ax11]:
-        minorLocator = MultipleLocator(0.1)
-        majorLocator = MultipleLocator(0.5)
-        ax.yaxis.set_minor_locator(minorLocator)
-        ax.yaxis.set_major_locator(majorLocator)
-        minorLocator = MultipleLocator(0.02)
-        majorLocator = MultipleLocator(0.2)
-        ax.xaxis.set_minor_locator(minorLocator)
-        ax.xaxis.set_major_locator(majorLocator)
-        ax.xaxis.set_tick_params(which='major',length=6)
-        ax.xaxis.set_tick_params(which='minor',length=3)
-        ax.yaxis.set_tick_params(which='major',length=6)
-        ax.yaxis.set_tick_params(which='minor',length=3)
-
-    ax11.set_xticks([0,0.2,0.4,0.6,0.8])
-
-    handles,labels = [],[]
-    handles.append(hand['p'])
-    handles.append(hand['n'])
-    handles.append(hand['CJ15'])
-    labels.append(r'\textbf{\textrm{JAM21 (p)}}')
-    labels.append(r'\textbf{\textrm{JAM21 (n)}}')
-    labels.append(r'\textbf{\textrm{CJ15}}')
-
-    ax11.legend(handles,labels,frameon=False,loc=2,fontsize=25, handletextpad = 0.5, handlelength = 1.5)
-
-    py.tight_layout()
-
-    filename = 'gallery/ht'
-    if mode == 1: filename += '-bands'
-    filename += '.png'
-    py.savefig(filename)
-    py.clf()
-    print('Saving figure to %s'%filename)
-
-def plot_off(Q2,mode=0):
-
-    nrows,ncols=1,1
-    fig = py.figure(figsize=(ncols*8,nrows*5))
-    ax11 = py.subplot(nrows,ncols,1)
-
-    hand = {}
-
-    OFF = lhapdf.mkPDFs('JAM21PDF-offshell')
-    nrep = len(OFF)
-
-    data = [] 
-
-    for i in range(nrep):
-        off =  np.array([OFF[i].xfxQ2(908,x,Q2) for x in X])
-        data.append(off)
-
-    if mode==0:
-        for i in range(nrep):
-            hand['JAM21'] ,= ax11.plot(X,data[i],color='red',alpha=0.1)
-
-    if mode == 1:
-        mean = np.mean(np.array(data),axis=0)
-        std  = np.std(np.array(data),axis=0)
-        hand['JAM21'] = ax11.fill_between(X,mean-std,mean+std,color='red',alpha=0.9,)
-
+              ax.set_xticks([0.2,0.4,0.6])
+              #ax.set_xticklabels([r'$0.01$',r'$0.1$',r'$1$'])
     
-    #--CJ15 
-    C =-3.6735
-    x0= 5.7717e-2
-    x1=0.36419
-    dfcj=C*(X-x0)*(X-x1)*(1+x0-X)
-    hand['CJ'] ,= ax11.plot(X,dfcj,'b--')
-    #--KP 
-    C = 8.10
-    x0= 0.448
-    x1= 0.05
-    dfcj=C*(X-x0)*(X-x1)*(1+x0-X)
-    hand['KP'] ,= ax11.plot(X,dfcj,'g--')
-
-    ax11.tick_params(axis='both',which='both',top=True,right=True,direction='in',labelsize=30)
-
-    ax11.text(0.60,0.05,r'$Q^2=%s{\rm~GeV^2}$'%Q2,size=30,transform=ax11.transAxes)
-
-    ax11.set_ylim(-1.2,1.2)
-    ax11.set_xlim(0,1)
-    ax11.text(0.05,0.05,r'\boldmath$\delta f^0$',transform=ax11.transAxes,size=40)
-    ax11.set_xlabel(r'\boldmath$x$'         ,size=30)
-    ax11.xaxis.set_label_coords(0.95,0.00)
-
-    ax11.axhline(0,alpha=0.5,color='k',ls='--')
-
+        ax11.set_ylim(-0.04,0.00)
+        ax12.set_ylim( 0.00,0.04)
+    
+        ax11.set_yticks([-0.04,-0.02,0.00])
+        ax12.set_yticks([ 0.00, 0.02,0.04])
+    
+        minorLocator = MultipleLocator(0.005)
+        ax11.yaxis.set_minor_locator(minorLocator)
+        ax12.yaxis.set_minor_locator(minorLocator)
+    
+        for ax in [ax11,ax12]:
+            ax.set_xlabel(r'\boldmath$x$' ,size=30)
+            ax.xaxis.set_label_coords(0.90,0.00)
+    
+        ax11.text(0.85 ,0.50  ,r'\boldmath{$u$}'            , transform=ax11.transAxes,size=30)
+        ax12.text(0.60 ,0.20  ,r'\boldmath{$d$}'            , transform=ax12.transAxes,size=30)
+   
+        ax11.set_ylabel(r'$xf_{1T}^{\perp(1)}(x)$',size=30)
  
-    for ax in [ax11]:
-        minorLocator = MultipleLocator(0.1)
-        majorLocator = MultipleLocator(0.5)
-        ax.yaxis.set_minor_locator(minorLocator)
-        ax.yaxis.set_major_locator(majorLocator)
-        minorLocator = MultipleLocator(0.02)
-        majorLocator = MultipleLocator(0.2)
-        ax.xaxis.set_minor_locator(minorLocator)
-        ax.xaxis.set_major_locator(majorLocator)
-        ax.xaxis.set_tick_params(which='major',length=6)
-        ax.xaxis.set_tick_params(which='minor',length=3)
-        ax.yaxis.set_tick_params(which='major',length=6)
-        ax.yaxis.set_tick_params(which='minor',length=3)
-        ax.set_xticks([0,0.2,0.4,0.6,0.8])
-
-
-    handles,labels=[],[]
-    handles.append(hand['JAM21'])
-    handles.append(hand['CJ'])
-    handles.append(hand['KP'])
-    labels.append(r'\textbf{\textrm{JAM21}}')
-    labels.append(r'\textbf{\textrm{CJ15}}')
-    labels.append(r'\textbf{\textrm{KP}}')
-
-    ax11.legend(handles,labels,frameon=False,loc='upper left',fontsize=28, handletextpad = 0.5, handlelength = 1.5, ncol = 1, columnspacing = 0.5)
-
-    py.tight_layout()
-
-    filename = 'gallery/off'
-    if mode == 1: filename += '-bands'
-    filename += '.png'
-    print('Saving figures to %s'%filename)
-    py.savefig(filename)
-    py.clf()
-
-def plot_CCstf(Q2,mode=0):
-
-    nrows,ncols=1,3
-    fig = py.figure(figsize=(ncols*7,nrows*4))
-    ax11=py.subplot(nrows,ncols,1)
-    ax12=py.subplot(nrows,ncols,2)
-    ax13=py.subplot(nrows,ncols,3)
-
-    hand = {}
-
-    stfs = ['W2+','WL+','W3+','W2-','WL-','W3-']
-    data = {stf: [] for stf in stfs} 
-
-    tablename = 'JAM21PDF-STF_proton'
-    STF = lhapdf.mkPDFs(tablename)
-    nrep = len(STF)
-
-    for i in range(nrep):
-        W2m =  np.array([STF[i].xfxQ2(930,x,Q2)*x for x in X])
-        WLm =  np.array([STF[i].xfxQ2(931,x,Q2)*x for x in X])
-        W3m =  np.array([STF[i].xfxQ2(932,x,Q2)*x for x in X])
-        W2p =  np.array([STF[i].xfxQ2(940,x,Q2)*x for x in X])
-        WLp =  np.array([STF[i].xfxQ2(941,x,Q2)*x for x in X])
-        W3p =  np.array([STF[i].xfxQ2(942,x,Q2)*x for x in X])
-        data['W2+'].append(W2p)
-        data['WL+'].append(WLp)
-        data['W3+'].append(W3p)
-        data['W2-'].append(W2m)
-        data['WL-'].append(WLm)
-        data['W3-'].append(W3m)
-
-    for stf in data:
-        mean = np.mean(data[stf],axis=0)
-        std = np.std(data[stf],axis=0)
-
-        if stf[-1]=='+': color='firebrick'
-        if stf[-1]=='-': color='darkcyan'
-
-        if stf =='W2+':   ax = ax11
-        elif stf =='WL+': ax = ax12
-        elif stf =='W3+': ax = ax13
-        elif stf =='W2-': ax = ax11
-        elif stf =='WL-': ax = ax12
-        elif stf =='W3-': ax = ax13
-        else: continue
-
-        #--plot each replica
-        if mode==0:
-            for i in range(nrep):
-                hand[stf[-1]] ,= ax.plot(X,data[stf][i],color=color,alpha=0.1)
+        if Q2 == 1.27**2: ax12.text(0.05,0.08,r'$Q^2 = m_c^2$'                                  , transform=ax12.transAxes,size=30)
+        else:             ax12.text(0.05,0.08,r'$Q^2 = %s$'%Q2 + ' ' + r'\textrm{GeV}' + r'$^2$', transform=ax12.transAxes,size=30)
     
-        #--plot average and standard deviation
-        if mode==1:
-            hand[stf[-1]] = ax.fill_between(X,mean-std,mean+std,color=color,alpha=0.9)
+        #ax11.axhline(0.0,ls='--',color='black',alpha=0.5)
+        #ax12.axhline(0.0,ls='--',color='black',alpha=0.5)
+    
+        py.tight_layout()
+        py.subplots_adjust(hspace = 0, wspace = 0.20)
+    
+        filename = '%s/gallery/lhapdf-f1T-Q2=%3.5f'%(wdir,Q2)
+        if mode==1: filename += '-bands'
+        filename+='.png'
+    
+        py.savefig(filename)
+        py.clf()
+        print ('Saving figure to %s'%filename)
 
-
-    for ax in [ax11,ax12,ax13]:
-          ax.set_xlim(1e-4,1)
-          ax.semilogx()
+    def plot_H1perp(self,wdir,file_name,Q2,mode=0):
+    
+        nrows,ncols=1,2
+        fig = py.figure(figsize=(ncols*7,nrows*4))
+        ax11=py.subplot(nrows,ncols,1)
+        ax12=py.subplot(nrows,ncols,2)
+    
+        hand = {}
+   
+        os.environ["LHAPDF_DATA_PATH"] = '/w/jam-sciwork18/ccocuzza/WormGearLHAPDF/%s/data'%(wdir)
+        QCF = lhapdf.mkPDFs(file_name)
+        nrep = len(PDF)
+    
+        flavs = ['fav','unf']
+        data = {flav: [] for flav in flavs} 
+    
+        for i in range(nrep):
+            #--skip mean value
+            if i==0: continue
+            fav =  np.array([QCF[i].xfxQ2( 1,x,Q2) for x in X])
+            unf =  np.array([QCF[i].xfxQ2( 2,x,Q2) for x in X])
+            data['fav']  .append(fav)
+            data['unf'].append(unfav)
             
-          ax.tick_params(axis='both', which='both', top=True, right=True, direction='in',labelsize=20)
-          ax.set_xticks([0.0001,0.001,0.01,0.1,1])
-          ax.set_xticklabels([r'$10^{-4}$',r'$10^{-3}$',r'$10^{-2}$',r'$10^{-1}$',r'$1$'])
-
-
-    ax13.axhline(0,0,1,ls='--',color='black',alpha=0.5)
-
-    ax11.set_ylim(0,0.4)   
-    ax12.set_ylim(0,0.015) 
-    ax13.set_ylim(-1.0,2.0)
-
-    ax11.set_xlabel(r'$x$' ,size=35)
-    ax12.set_xlabel(r'$x$' ,size=35)   
-    ax13.set_xlabel(r'$x$' ,size=35)   
-
-    if Q2 == 1.27**2: ax11.text(0.40,0.85,r'$Q^2 = m_c^2$'                                  , transform=ax11.transAxes,size=30)
-    else:             ax11.text(0.40,0.85,r'$Q^2 = %s$'%Q2 + ' ' + r'\textrm{GeV}' + r'$^2$', transform=ax11.transAxes,size=30)
-
-    ax11.text(0.05,0.85,r'\boldmath$xW_2$',transform=ax11.transAxes,size=30)
-    ax12.text(0.05,0.85,r'\boldmath$xW_L$',transform=ax12.transAxes,size=30)
-    ax13.text(0.05,0.85,r'\boldmath$xW_3$',transform=ax13.transAxes,size=30)
-
-    handles,labels=[],[]
-    handles.append(hand['+'])
-    handles.append(hand['-'])
-    labels.append(r'\boldmath$W^+$')
-    labels.append(r'\boldmath$W^-$')
-    ax11.legend(handles,labels,frameon=False,loc='lower left',fontsize=28, handletextpad = 0.5, handlelength = 1.5, ncol = 1, columnspacing = 0.5)
-
-    py.tight_layout()
-
-    filename = 'gallery/stfs-CC'
-    if mode==1: filename += '-bands'
-    filename+='.png'
-    py.savefig(filename)
-    print ('Saving figure to %s'%filename)
-    py.clf()
+        for flav in data:
+    
+            if   flav=='fav': ax = ax11
+            elif flav=='unf': ax = ax12
+    
+            mean = np.mean(data[flav],axis=0)
+            std  = np.std (data[flav],axis=0)
+    
+            if mode==0:
+                for i in range(nrep-1):
+                    ax.plot(X,data[flav][i],color='red',alpha=0.1)
+     
+            #--plot average and standard deviation
+            if mode==1:
+                ax.fill_between(X,mean-std,mean+std,color='red',alpha=0.9)
+    
+    
+        for ax in [ax11,ax12]:
+              ax.set_xlim(0,1)
+                
+              ax.tick_params(axis='both', which='major', top=True, right=True, direction='in',labelsize=30,length=10)
+              ax.tick_params(axis='both', which='minor', top=True, right=True, direction='in',labelsize=30,length=5)
+              ax.set_xticks([0.2,0.4,0.6,0.8])
+              #ax.set_xticklabels([r'$0.01$',r'$0.1$',r'$1$'])
+    
+        ax11.set_ylim( 0.0,0.4)
+        ax12.set_ylim(-0.7,0.0)
+    
+        ax11.set_yticks([0.1,0.2,0.3])
+        ax12.set_yticks([-0.4,0.0])
+    
+        minorLocator = MultipleLocator(0.05)
+        ax11.yaxis.set_minor_locator(minorLocator)
+        minorLocator = MultipleLocator(0.1)
+        ax12.yaxis.set_minor_locator(minorLocator)
+    
+        for ax in [ax11,ax12]:
+            ax.set_xlabel(r'\boldmath$z$' ,size=30)
+            ax.xaxis.set_label_coords(0.90,0.00)
+    
+        ax11.text(0.85 ,0.50  ,r'\textrm{\textbf{fav}}'            , transform=ax11.transAxes,size=30)
+        ax12.text(0.60 ,0.20  ,r'\textrm{\textbf{unf}}'            , transform=ax12.transAxes,size=30)
+   
+        ax11.set_ylabel(r'$zH_1^{\perp(1)}(z)$',size=30)
+ 
+        if Q2 == 1.27**2: ax12.text(0.05,0.08,r'$Q^2 = m_c^2$'                                  , transform=ax12.transAxes,size=30)
+        else:             ax12.text(0.05,0.08,r'$Q^2 = %s$'%Q2 + ' ' + r'\textrm{GeV}' + r'$^2$', transform=ax12.transAxes,size=30)
+    
+        #ax11.axhline(0.0,ls='--',color='black',alpha=0.5)
+        #ax12.axhline(0.0,ls='--',color='black',alpha=0.5)
+    
+        py.tight_layout()
+        py.subplots_adjust(hspace = 0, wspace = 0.20)
+    
+        filename = '%s/gallery/lhapdf-H1perp-Q2=%3.5f'%(wdir,Q2)
+        if mode==1: filename += '-bands'
+        filename+='.png'
+    
+        py.savefig(filename)
+        py.clf()
+        print ('Saving figure to %s'%filename)
 
 
 
