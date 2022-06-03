@@ -1,5 +1,6 @@
 # WormGearLHAPDF
 
+* To generate the LHAPDF files, use the command ```./genlhapdf -d results```
 
 # Unpolarized Analysis:
 Information:
@@ -15,10 +16,9 @@ Information:
 
 
 
-Recreated plots from [JAM22][JAM22]
+Recreated plots from [JAM22][JAM22]:
 
 ![plot](./results/gallery/lhapdf-transversity-Q2=4.00000-bands.png)
-
 
 ![plot](./results/gallery/lhapdf-collinspi-Q2=4.00000-bands.png)
 
