@@ -241,11 +241,11 @@ class QCF:
             lines.append(line)
         if dist=='collinspi':
             line='widths_fav: ['
-            for _ in self.widths_fav: line+=('%10.5e, '%_**0.5).upper()
+            for _ in self.widths_fav: line+=('%10.5e, '%_).upper()
             line=line.rstrip(',')+']'
             lines.append(line)
             line='widths_unf: ['
-            for _ in self.widths_unf: line+=('%10.5e, '%_**0.5).upper()
+            for _ in self.widths_unf: line+=('%10.5e, '%_).upper()
             line=line.rstrip(',')+']'
             lines.append(line)
 
@@ -293,13 +293,14 @@ class QCF:
         checkdir(wdir + '/data/')
         checkdir(wdir + '/data/%s/' % file_name)
 
+        print(dist)
         if dist=='transversity': self.widths_uv = []
         if dist=='collinspi':    self.widths_fav,self.widths_unf = [],[]
         for i in range(len(order)):
             if order[i][0] != 1: continue
             if order[i][1] != dist: continue
-            if order[i][2] == 'widths1_uv':   uv_idx  = i 
-            if order[i][2] == 'widths1_fav':  fav_idx = i 
+            if order[i][2] == 'widths1_uv':   uv_idx  = i
+            if order[i][2] == 'widths1_fav':  fav_idx = i
             if order[i][2] == 'widths1_ufav': unf_idx = i
 
 

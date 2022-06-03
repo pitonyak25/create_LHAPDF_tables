@@ -10,7 +10,20 @@ from tools.tools import checkdir
 from tolhapdf import QCF
 QCF = QCF()
 
+from plot import plot_transversity,plot_collinspi,plot_widths
 
+def gen_lhapdf(wdir,dist,name,particle,description,index,authors,reference):
+
+    print('Generating LHAPDF files using directory %s for %s with the following information \n'%(args.directory,dist))
+
+    print('Name:        %s'%name)
+    print('Description: %s'%description)
+    print('Index:       %s'%index)
+    print('Authors:     %s'%authors)
+    print('Reference:   %s'%reference)
+    print('Particle:    %s'%particle)
+    info['particle']      = particle
+    QCF.gen_tables(args.directory,dist,name,info,info_only=False)
 
 if __name__=='__main__':
 
@@ -22,31 +35,10 @@ if __name__=='__main__':
     checkdir('%s/data'%args.directory)
     checkdir('%s/gallery'%args.directory)
 
-    #--generate transversity 
-    description = '...' 
-    index       = '1'
-    authors     = '...'
-    reference   = '...'
-    info = {}
-    info['<description>'] = description
-    info['<index>']       = index
-    info['<authors>']     = authors
-    info['reference']     = reference
-   
-    print('Generating LHAPDF files using directory %s for transversity with the following information \n'%(args.directory))
-
+    #--generate transversity
+    dist='transversity'
     name        = 'JAM22-transversity_proton_lo'
     particle    = '2212'
-    print('Name:        %s'%name)
-    print('Description: %s'%description)
-    print('Index:       %s'%index)
-    print('Authors:     %s'%authors)
-    print('Reference:   %s'%reference)
-    print('Particle:    %s'%particle)
-    info['particle']      = particle
-    QCF.gen_tables(args.directory,'transversity',name,info,info_only=False)
-
-    #--generate collins
     description = '...' 
     index       = '1'
     authors     = '...'
@@ -57,22 +49,32 @@ if __name__=='__main__':
     info['<authors>']     = authors
     info['reference']     = reference
 
-    print('Generating LHAPDF files using directory %s for Collins pion with the following information \n'%(args.directory))
+    gen_lhapdf(args.directory,dist,name,particle,description,index,authors,reference)   
 
+    plot_transversity(args.directory,name,Q2=4.0,mode=0)
+    plot_transversity(args.directory,name,Q2=4.0,mode=1)
+
+    #--generate collins
+    dist = 'collinspi'
     name        = 'JAM22-Collins_pion_lo'
     particle    = '211'
-    print('Name:        %s'%name)
-    print('Description: %s'%description)
-    print('Index:       %s'%index)
-    print('Authors:     %s'%authors)
-    print('Reference:   %s'%reference)
-    print('Particle:    %s'%particle)
-    info['particle']      = particle
-    QCF.gen_tables(args.directory,'collinspi',name,info,info_only=False)
+    description = '...' 
+    index       = '1'
+    authors     = '...'
+    reference   = '...'
+    info = {}
+    info['<description>'] = description
+    info['<index>']       = index
+    info['<authors>']     = authors
+    info['reference']     = reference
+
+    gen_lhapdf(args.directory,dist,name,particle,description,index,authors,reference)   
 
 
+    plot_collinspi(args.directory,name,Q2=4.0,mode=0)
+    plot_collinspi(args.directory,name,Q2=4.0,mode=1)
 
-
+    plot_widths(args.directory,name)
 
 
 

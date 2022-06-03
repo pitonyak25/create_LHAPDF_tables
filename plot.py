@@ -239,6 +239,8 @@ def plot_widths(wdir,file_name):
     info = lhapdf.getPDFSet(file_name)
     widths_fav = info.get_entry('widths_fav')
     widths_unf = info.get_entry('widths_unf')
+    #--the list of widths is saved as a big string
+    #--the code below converts that giant string back into a list of floats
     widths_fav = widths_fav[1:][:len(widths_fav)-2]
     widths_unf = widths_fav[1:][:len(widths_unf)-2]
     widths_fav = widths_fav.split(',')
@@ -252,17 +254,17 @@ def plot_widths(wdir,file_name):
         num, exp = widths_unf[i].split('E')
         unf.append(float(num)*10**int(exp))
        
-    ax11.hist(fav,color='red' ,alpha=0.6,edgecolor='black')
-    ax12.hist(unf,color='blue',alpha=0.6,edgecolor='black')
+    ax11.hist(fav,color='red' ,alpha=0.6,edgecolor='black',bins=40)
+    ax12.hist(unf,color='blue',alpha=0.6,edgecolor='black',bins=40)
 
     for ax in [ax11,ax12]:
-          ax.set_xlim(0.0,0.6)
+          ax.set_xlim(0.0,0.3)
             
           ax.tick_params(axis='both', which='major', top=True, right=True, direction='in',labelsize=20,length=10)
           ax.tick_params(axis='both', which='minor', top=True, right=True, direction='in',labelsize=20,length=5)
-          ax.set_xticks([0.1,0.2,0.3,0.4,0.5])
-          minorLocator = MultipleLocator(0.1)
-          ax.xaxis.set_minor_locator(minorLocator)
+          ax.set_xticks([0.05,0.10,0.15,0.20,0.25])
+          #minorLocator = MultipleLocator(0.1)
+          #ax.xaxis.set_minor_locator(minorLocator)
 
     ax11.set_ylabel(r'\textrm{\textbf{Yield}}',size=30)
 
@@ -286,13 +288,13 @@ if __name__=="__main__":
 
     #--plot transversity
     file_name = 'JAM22-transversity_proton_lo'
-    plot_transversity(wdir,file_name,Q2,mode=0)
-    plot_transversity(wdir,file_name,Q2,mode=1)
+    #plot_transversity(wdir,file_name,Q2,mode=0)
+    #plot_transversity(wdir,file_name,Q2,mode=1)
 
-    #--plot Collins pion
+    ##--plot Collins pion
     file_name = 'JAM22-Collins_pion_lo'
-    plot_collinspi(wdir,file_name,Q2,mode=0)
-    plot_collinspi(wdir,file_name,Q2,mode=1)
+    #plot_collinspi(wdir,file_name,Q2,mode=0)
+    #plot_collinspi(wdir,file_name,Q2,mode=1)
 
     #--plot widths for Collins pion
     plot_widths(wdir,file_name)
