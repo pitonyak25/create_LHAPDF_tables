@@ -2,7 +2,7 @@
 
 * To generate the LHAPDF files, use the command ```./genlhapdf -d results```
 * The resulting files will be stored in ```results/data``` (they have already been generated)
-* Use ```plot.py``` to generate the three plots below.  
+* Use ```plot.py``` to load the LHAPDF files and generate the three plots below
 * The resulting plots will be stored in ```results/gallery``` (they have already been generated)
 * To learn how to load and use the distributions and widths, look at the functions within ```plot.py```
 
