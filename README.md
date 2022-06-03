@@ -25,6 +25,6 @@ Recreated plots from [JAM22][JAM22]
 ![plot](./results/gallery/lhapdf-collinspi-widths.png)
 
 
-[marathon-arXiv]: https://arxiv.org/abs/2205.00999
+[JAM22]: https://arxiv.org/abs/2205.00999
 
 
