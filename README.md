@@ -1,16 +1,9 @@
 # WormGearLHAPDF
 
 * To generate the LHAPDF files, use the command ```./genlhapdf -d results```
-
-# Unpolarized Analysis:
-Information:
-* A = 2 Wavefunction: Paris (unless otherwise stated)
-* A = 3 Wavefunction: KPSV  (unless otherwise stated)
-* Multiplicative higher twist (if included)
-* Initial parameterization: OS for uv, dv, g, ub, db, s, sb, sea1 = sea2
-* Input scale: m<sub>c</sub><sup>2</sup>
-* DIS Q<sup>2</sup> cut:  m<sub>c</sub><sup>2</sup>
-
+* The resulting files will be stored in ```results/data``` (they have already been generated)
+* Use ```plot.py``` to generate the three plots below
+* To learn how to load and use the distributions and widths, look at ```plot.py```
 
 
 
