@@ -2,6 +2,7 @@
 
 * To generate the LHAPDF files, use the command ```./genlhapdf -d results```
 * The resulting files will be stored in ```results/data``` (they have already been generated)
+* Note that index 0000 contains the mean value of the replicas.  Indices 0001 and above are the replicas.
 * Use ```./plot.py``` to load the LHAPDF files and generate the three plots below
 * The resulting plots will be stored in ```results/gallery``` (they have already been generated)
 * To learn how to load and use the distributions and widths, look at the functions within ```plot.py```
