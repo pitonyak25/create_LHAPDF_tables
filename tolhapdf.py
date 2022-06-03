@@ -3,12 +3,6 @@ import sys,os
 import numpy as np
 import copy
 from subprocess import Popen, PIPE, STDOUT
-import matplotlib
-matplotlib.use('Agg')
-matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
-matplotlib.rc('text',usetex=True)
-from matplotlib.ticker import MultipleLocator
-import pylab  as py
 import lhapdf
 
 #--from tools
@@ -40,9 +34,6 @@ cwd = os.getcwd()
 
 #iflavs = [-5,-4,-3,-2,-1,1,2,3,4,5,21]
 iflavs = [1,2]
-
-#--mode 0: plot each replica
-#--mode 1: plot average and standard deviation of replicas
 
 X1=10**np.linspace(-4,-1)
 X2=np.linspace(0.101,0.99)
@@ -243,8 +234,20 @@ class QCF:
         lines.append(line)
         lines.append('AlphaS_Lambda4: 0')
         lines.append('AlphaS_Lambda5: 0')
-        if dist=='...':
-            lines.append('widths:...')
+        if dist=='transversity':
+            line='widths_uv: ['
+            for _ in self.widths_uv: line+=('%10.5e, '%_**0.5).upper()
+            line=line.rstrip(',')+']'
+            lines.append(line)
+        if dist=='collinspi':
+            line='widths_fav: ['
+            for _ in self.widths_fav: line+=('%10.5e, '%_**0.5).upper()
+            line=line.rstrip(',')+']'
+            lines.append(line)
+            line='widths_unf: ['
+            for _ in self.widths_unf: line+=('%10.5e, '%_**0.5).upper()
+            line=line.rstrip(',')+']'
+            lines.append(line)
 
  
         for i in range(len(lines)):
@@ -289,11 +292,17 @@ class QCF:
         #--create output dir
         checkdir(wdir + '/data/')
         checkdir(wdir + '/data/%s/' % file_name)
-    
-        #--gen_lhapdf_info_file
-        X,Q2=self.gen_grid(dist)
-        nrep=len(replicas)
-        self.gen_lhapdf_info_file(X,Q2,nrep,wdir,dist,file_name,info)
+
+        if dist=='transversity': self.widths_uv = []
+        if dist=='collinspi':    self.widths_fav,self.widths_unf = [],[]
+        for i in range(len(order)):
+            if order[i][0] != 1: continue
+            if order[i][1] != dist: continue
+            if order[i][2] == 'widths1_uv':   uv_idx  = i 
+            if order[i][2] == 'widths1_fav':  fav_idx = i 
+            if order[i][2] == 'widths1_ufav': unf_idx = i
+
+
 
         #--gen lhapdf_data_files
         TABLE = {}
@@ -309,13 +318,23 @@ class QCF:
                 for iflav in iflavs:
                     TABLE[iflav].append(table[iflav])
                 self.gen_lhapdf_dat_file(X,Q2,table, wdir, file_name,cnt+1)
+                if dist=='transversity':
+                    self.widths_uv.append(par[uv_idx])
+                if dist=='collinspi':
+                    self.widths_fav.append(par[fav_idx])
+                    self.widths_unf.append(par[unf_idx])
                 cnt+=1
             print()
-       
+      
         #--save mean value with index 0000 
         for iflav in iflavs:
             TABLE[iflav] = np.mean(TABLE[iflav],axis=0)
         self.gen_lhapdf_dat_file(X,Q2,table, wdir, file_name,0)
+
+        #--gen_lhapdf_info_file
+        X,Q2=self.gen_grid(dist)
+        nrep=len(replicas)
+        self.gen_lhapdf_info_file(X,Q2,nrep,wdir,dist,file_name,info)
 
         print('Saving LHAPDF table to %s/data/%s'%(wdir,file_name))
 
