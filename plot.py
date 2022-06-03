@@ -288,13 +288,13 @@ if __name__=="__main__":
 
     #--plot transversity
     file_name = 'JAM22-transversity_proton_lo'
-    #plot_transversity(wdir,file_name,Q2,mode=0)
-    #plot_transversity(wdir,file_name,Q2,mode=1)
+    plot_transversity(wdir,file_name,Q2,mode=0)
+    plot_transversity(wdir,file_name,Q2,mode=1)
 
     ##--plot Collins pion
     file_name = 'JAM22-Collins_pion_lo'
-    #plot_collinspi(wdir,file_name,Q2,mode=0)
-    #plot_collinspi(wdir,file_name,Q2,mode=1)
+    plot_collinspi(wdir,file_name,Q2,mode=0)
+    plot_collinspi(wdir,file_name,Q2,mode=1)
 
     #--plot widths for Collins pion
     plot_widths(wdir,file_name)
