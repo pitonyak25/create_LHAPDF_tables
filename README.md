@@ -12,10 +12,13 @@
 
 Recreated plots from [JAM22][JAM22]:
 
+Transversity PDFs:
 ![plot](./results/gallery/lhapdf-transversity-Q2=4.00000-bands.png)
 
+Collins pion function (first moment):
 ![plot](./results/gallery/lhapdf-collinspi-Q2=4.00000-bands.png)
 
+Widths for Collins pion function:
 ![plot](./results/gallery/lhapdf-collinspi-widths.png)
 
 
