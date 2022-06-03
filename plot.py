@@ -3,8 +3,7 @@ import sys,os
 #sys.path.append(os.path.dirname( os.path.dirname(os.path.abspath(__file__) ) ) )
 import numpy as np
 
-os.environ["LHAPDF_DATA_PATH"] = '/work/JAM/ccocuzza/WormGearLHAPDF/lhapdf/sets'
-
+cwd = os.getcwd()
 
 import lhapdf
 import argparse
@@ -27,8 +26,6 @@ from matplotlib.ticker import MultipleLocator
 #--21: gluon
 #--negative values for antiquarks
 
-
-
 X1=10**np.linspace(-4,-1)
 X2=np.linspace(0.101,0.99)
 X=np.append(X1,X2)
@@ -42,7 +39,7 @@ def plot_transversity(wdir,file_name,Q2,mode=0):
 
     hand = {}
 
-    os.environ["LHAPDF_DATA_PATH"] = '/w/jam-sciwork18/ccocuzza/WormGearLHAPDF/%s/data'%(wdir)
+    os.environ["LHAPDF_DATA_PATH"] = '%s/%s/data'%(cwd,wdir)
     QCF = lhapdf.mkPDFs(file_name)
     nrep = len(QCF)
 
@@ -139,7 +136,7 @@ def plot_collinspi(wdir,file_name,Q2,mode=0):
 
     hand = {}
 
-    os.environ["LHAPDF_DATA_PATH"] = '/w/jam-sciwork18/ccocuzza/WormGearLHAPDF/%s/data'%(wdir)
+    os.environ["LHAPDF_DATA_PATH"] = '%s/%s/data'%(cwd,wdir)
     QCF = lhapdf.mkPDFs(file_name)
     nrep = len(QCF)
 
@@ -226,21 +223,79 @@ def plot_collinspi(wdir,file_name,Q2,mode=0):
     py.clf()
     print ('Saving figure to %s'%filename)
 
+def plot_widths(wdir,file_name):
+
+    nrows,ncols=1,2
+    fig = py.figure(figsize=(ncols*7,nrows*4))
+    ax11=py.subplot(nrows,ncols,1)
+    ax12=py.subplot(nrows,ncols,2)
+
+    hand = {}
+
+    os.environ["LHAPDF_DATA_PATH"] = '%s/%s/data'%(cwd,wdir)
+    QCF = lhapdf.mkPDFs(file_name)
+    nrep = len(QCF)
+
+    info = lhapdf.getPDFSet(file_name)
+    widths_fav = info.get_entry('widths_fav')
+    widths_unf = info.get_entry('widths_unf')
+    widths_fav = widths_fav[1:][:len(widths_fav)-2]
+    widths_unf = widths_fav[1:][:len(widths_unf)-2]
+    widths_fav = widths_fav.split(',')
+    widths_unf = widths_unf.split(',')
+
+    fav, unf = [],[]
+    for i in range(nrep):
+        num, exp = widths_fav[i].split('E')
+        fav.append(float(num)*10**int(exp))
+
+        num, exp = widths_unf[i].split('E')
+        unf.append(float(num)*10**int(exp))
+       
+    ax11.hist(fav,color='red' ,alpha=0.6,edgecolor='black')
+    ax12.hist(unf,color='blue',alpha=0.6,edgecolor='black')
+
+    for ax in [ax11,ax12]:
+          ax.set_xlim(0.0,0.6)
+            
+          ax.tick_params(axis='both', which='major', top=True, right=True, direction='in',labelsize=20,length=10)
+          ax.tick_params(axis='both', which='minor', top=True, right=True, direction='in',labelsize=20,length=5)
+          ax.set_xticks([0.1,0.2,0.3,0.4,0.5])
+          minorLocator = MultipleLocator(0.1)
+          ax.xaxis.set_minor_locator(minorLocator)
+
+    ax11.set_ylabel(r'\textrm{\textbf{Yield}}',size=30)
+
+    ax11.set_title(r'\textrm{\textbf{Favored}}',size=25)
+    ax12.set_title(r'\textrm{\textbf{Unfavored}}',size=25)
+
+    py.tight_layout()
+    py.subplots_adjust(hspace = 0, wspace = 0.20)
+
+    filename = '%s/gallery/lhapdf-collinspi-widths'%(wdir)
+    filename+='.png'
+
+    py.savefig(filename)
+    py.clf()
+    print ('Saving figure to %s'%filename)
 
 if __name__=="__main__":
 
     wdir      = 'results'
     Q2 = 4.0
 
-    #file_name = 'JAM22-TPDF_proton_lo'
-    #plot_transversity(wdir,file_name,Q2,mode=0)
-    #plot_transversity(wdir,file_name,Q2,mode=1)
+    #--plot transversity
+    file_name = 'JAM22-transversity_proton_lo'
+    plot_transversity(wdir,file_name,Q2,mode=0)
+    plot_transversity(wdir,file_name,Q2,mode=1)
 
+    #--plot Collins pion
     file_name = 'JAM22-Collins_pion_lo'
     plot_collinspi(wdir,file_name,Q2,mode=0)
     plot_collinspi(wdir,file_name,Q2,mode=1)
 
-
+    #--plot widths for Collins pion
+    plot_widths(wdir,file_name)
 
 
 
