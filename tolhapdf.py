@@ -293,7 +293,6 @@ class QCF:
         checkdir(wdir + '/data/')
         checkdir(wdir + '/data/%s/' % file_name)
 
-        print(dist)
         if dist=='transversity': self.widths_uv = []
         if dist=='collinspi':    self.widths_fav,self.widths_unf = [],[]
         for i in range(len(order)):

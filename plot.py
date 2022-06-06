@@ -15,6 +15,16 @@ matplotlib.rc('text',usetex=True)
 import pylab  as py
 from matplotlib.ticker import MultipleLocator
 
+from tolhapdf import PARMAN
+from tools.config import conf, load_config
+from tools.tools  import load, save, lprint, checkdir
+
+from tools.core import CORE
+from qpdlib.aux import AUX
+
+core = CORE()
+aux  = AUX()
+
 #--index conventions:
 #--index conventions:
 #--1: down
@@ -26,11 +36,83 @@ from matplotlib.ticker import MultipleLocator
 #--21: gluon
 #--negative values for antiquarks
 
-X1=10**np.linspace(-4,-1)
-X2=np.linspace(0.101,0.99)
-X=np.append(X1,X2)
+#--setup kinematics
+X=np.linspace(0.01,0.99,100)
+
+#--generate distributions directly from replicas
+def gen_xf(wdir,dist,Q2=4.0):
+
+    load_config('%s/input.py'%wdir)
+    istep=core.get_istep()
+    core.mod_conf(istep) #--set conf as specified in istep
+
+    #--LO analysis
+    conf['order'] = 'LO'
+    conf['aux']   = aux
+
+    #--load jar file, or generate if it does not exist
+    jarname = '%s/data/jar-%d.dat'%(wdir,istep)
+    try:
+        jar=load(jarname)
+    except:
+        core.gen_jar_file(wdir)
+        jar=load(jarname)
+    replicas=jar['replicas']
+
+  
+    parman = PARMAN() 
+ 
+    #--check order consistency
+    order=jar['order']
+    parman.order = order
+
+
+    pdf=conf[dist]
+    #--compute XF for all replicas
+    XF={}
+    cnt=0
+    replicas=core.get_replicas(wdir)
+    for replica in replicas:
+        cnt+=1
+        lprint('%d/%d'%(cnt,len(replicas)))
+
+        parman.set_new_params(replica['params'][istep],initial=False)
+        core.set_passive_params(istep,replica)
+
+        for flav in ['u', 'd']:
+            if flav not in XF:  XF[flav]=[]
+
+            if flav=='u':
+                func=lambda x: pdf.get_C(x,Q2)[1]
+            elif flav=='ub':
+                func=lambda x: pdf.get_C(x,Q2)[2]
+            elif flav=='d':
+                func=lambda x:pdf.get_C(x,Q2)[3]
+            elif flav=='db':
+                func=lambda x: pdf.get_C(x,Q2)[4]
+            elif flav=='s':
+                func=lambda x: pdf.get_C(x,Q2)[5]
+            elif flav=='sb':
+                func=lambda x: pdf.get_C(x,Q2)[6]
+
+            XF[flav].append([x*func(x) for x in X])
+
+    print()
+    checkdir('%s/data'%wdir)
+    filename='%s/data/%s-Q2=%3.5f.dat'%(wdir,dist,Q2)
+    save({'X':X,'Q2':Q2,'XF':XF},filename)
+
 
 def plot_transversity(wdir,file_name,Q2,mode=0):
+
+    dist = 'transversity'
+    #--load data if it exists, else generate it
+    filename='%s/data/%s-Q2=%3.5f.dat'%(wdir,dist,Q2)
+    try:
+        replica_data = load(filename)
+    except:
+        gen_xf(wdir,dist,Q2)
+        replica_data = load(filename)
 
     nrows,ncols=1,2
     fig = py.figure(figsize=(ncols*7,nrows*4))
@@ -59,6 +141,7 @@ def plot_transversity(wdir,file_name,Q2,mode=0):
         if   flav=='u': ax = ax11
         elif flav=='d': ax = ax12
 
+        #--plot data from LHAPDF
         mean = np.mean(data[flav],axis=0)
         std  = np.std (data[flav],axis=0)
 
@@ -71,6 +154,14 @@ def plot_transversity(wdir,file_name,Q2,mode=0):
             ax.plot(X,mean,color='blue',alpha=1.0,lw=5)
             JAM22 = ax.fill_between(X,mean-std,mean+std,color='blue',alpha=0.6)
 
+        #--plot data directly from replicas
+        mean = np.mean(replica_data['XF'][flav],axis=0)
+        std  = np.std (replica_data['XF'][flav],axis=0)
+
+        #--plot average and standard deviation
+        if mode==1:
+            replica ,= ax.plot(X,mean+std,color='red',ls='--',alpha=1.0)
+            replica ,= ax.plot(X,mean-std,color='red',ls='--',alpha=1.0)
 
     for ax in [ax11,ax12]:
           ax.set_xlim(0,1)
@@ -110,10 +201,12 @@ def plot_transversity(wdir,file_name,Q2,mode=0):
 
     handles, labels = [],[]
     handles.append(JAM22)
+    if mode==1: handles.append(replica)
 
-    labels.append(r'\textrm{\textbf{JAM22}}')
+    labels.append(r'\textrm{\textbf{JAM22 (LHAPDF)}}')
+    if mode==1: labels.append(r'\textrm{\textbf{JAM22 (replicas)}}')
 
-    legend1 = ax11.legend(handles,labels,loc='upper right',fontsize=24,frameon=0,handletextpad=0.5,handlelength=0.9,ncol=1,columnspacing=1.5)
+    legend1 = ax11.legend(handles,labels,loc='upper right',fontsize=20,frameon=0,handletextpad=0.5,handlelength=0.9,ncol=1,columnspacing=1.5)
 
 
     py.tight_layout()
@@ -128,6 +221,15 @@ def plot_transversity(wdir,file_name,Q2,mode=0):
     print ('Saving figure to %s'%filename)
 
 def plot_collinspi(wdir,file_name,Q2,mode=0):
+
+    dist = 'collinspi'
+    #--load data if it exists, else generate it
+    filename='%s/data/%s-Q2=%3.5f.dat'%(wdir,dist,Q2)
+    try:
+        replica_data = load(filename)
+    except:
+        gen_xf(wdir,dist,Q2)
+        replica_data = load(filename)
 
     nrows,ncols=1,2
     fig = py.figure(figsize=(ncols*7,nrows*4))
@@ -168,6 +270,14 @@ def plot_collinspi(wdir,file_name,Q2,mode=0):
             ax.plot(X,mean,color='blue',alpha=1.0,lw=5)
             JAM22 = ax.fill_between(X,mean-std,mean+std,color='blue',alpha=0.6)
 
+        #--plot data directly from replicas
+        mean = np.mean(replica_data['XF'][flav],axis=0)
+        std  = np.std (replica_data['XF'][flav],axis=0)
+
+        #--plot average and standard deviation
+        if mode==1:
+            replica ,= ax.plot(X,mean+std,color='red',ls='--',alpha=1.0)
+            replica ,= ax.plot(X,mean-std,color='red',ls='--',alpha=1.0)
 
     for ax in [ax11,ax12]:
           ax.set_xlim(0.2,1)
@@ -207,10 +317,12 @@ def plot_collinspi(wdir,file_name,Q2,mode=0):
 
     handles, labels = [],[]
     handles.append(JAM22)
+    if mode==1: handles.append(replica)
 
-    labels.append(r'\textrm{\textbf{JAM22}}')
+    labels.append(r'\textrm{\textbf{JAM22 (LHAPDF)}}')
+    if mode==1: labels.append(r'\textrm{\textbf{JAM22 (replicas)}}')
 
-    legend1 = ax11.legend(handles,labels,loc='upper right',fontsize=24,frameon=0,handletextpad=0.5,handlelength=0.9,ncol=1,columnspacing=1.5)
+    legend1 = ax11.legend(handles,labels,loc='upper right',fontsize=20,frameon=0,handletextpad=0.5,handlelength=0.9,ncol=1,columnspacing=1.5)
 
     py.tight_layout()
     py.subplots_adjust(hspace = 0, wspace = 0.20)
