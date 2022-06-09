@@ -19,6 +19,9 @@ Transversity PDFs:
 Collins pion function (first moment):
 ![plot](./results/gallery/lhapdf-collinspi-Q2=4.00000-bands.png)
 
+Htilde pion:
+![plot](./results/gallery/lhapdf-Htildepi-Q2=4.00000-bands.png)
+
 Widths for Collins pion function:
 ![plot](./results/gallery/lhapdf-collinspi-widths.png)
 

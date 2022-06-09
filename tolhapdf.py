@@ -122,7 +122,8 @@ class QCF:
     
     def gen_grid(self,dist):
         if    dist=='transversity' : return self.gen_cj_grid()
-        if    dist=='collinspi' :     return self.gen_cj_grid()
+        if    dist=='collinspi' :    return self.gen_cj_grid()
+        if    dist=='Htildepi' :     return self.gen_cj_grid()
     
     def _gen_table(self,dist):
     
@@ -282,7 +283,8 @@ class QCF:
             jar=load(jarname)
         replicas=jar['replicas']
 
-  
+ 
+        #print(list(conf['params'])) 
         parman = PARMAN() 
  
         #--check order consistency
