@@ -33,7 +33,7 @@ cwd = os.getcwd()
 #--negative values for antiquarks
 
 #iflavs = [-5,-4,-3,-2,-1,1,2,3,4,5,21]
-iflavs = [1,2]
+iflavs = [1,2,3,-1,-2,-3]
 
 X1=10**np.linspace(-4,-1)
 X2=np.linspace(0.101,0.99)
@@ -140,6 +140,11 @@ class QCF:
             for ix in range(nx):
                 table[ 1].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[3])
                 table[ 2].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[1])
+                if dist in ['collinspi','Htildepi']:
+                    table[ 3].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[3])
+                    table[-1].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[1])
+                    table[-2].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[3])
+                    table[-3].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[3])
 
         #--remap tables to match with lhapdf format
         for iflav in iflavs: 
@@ -331,7 +336,7 @@ class QCF:
         #--save mean value with index 0000 
         for iflav in iflavs:
             TABLE[iflav] = np.mean(TABLE[iflav],axis=0)
-        self.gen_lhapdf_dat_file(X,Q2,table, wdir, file_name,0)
+        self.gen_lhapdf_dat_file(X,Q2,TABLE, wdir, file_name,0)
 
         #--gen_lhapdf_info_file
         X,Q2=self.gen_grid(dist)
