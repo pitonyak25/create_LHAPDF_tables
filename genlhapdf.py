@@ -119,7 +119,7 @@ if __name__=='__main__':
         info['<authors>']     = authors
         info['reference']     = reference
 
-        #gen_lhapdf(args.directory,dist,name,particle,description,index,authors,reference)   
+        gen_lhapdf(args.directory,dist,name,particle,description,index,authors,reference)   
 
         plot_sivers(args.directory,name,Q2=4.0,mode=0)
         plot_sivers(args.directory,name,Q2=4.0,mode=1)
