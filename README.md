@@ -1,4 +1,4 @@
-# WormGearLHAPDF
+# create_LHAPDF_tables
 
 * Copy the directory with the msr files that you want to convert into LHAPDF into this directory
 * To generate the LHAPDF files, use the command ```./genlhapdf -d wdir -f function```
