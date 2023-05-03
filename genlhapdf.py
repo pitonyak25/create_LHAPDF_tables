@@ -10,7 +10,7 @@ from tools.tools import checkdir
 from tolhapdf import QCF, rename_tables
 QCF = QCF()
 
-from plot import plot_transversity,plot_collinspi,plot_widths,plot_Htildepi
+from plot import plot_transversity,plot_collinspi,plot_widths,plot_Htildepi,plot_sivers
 
 def gen_lhapdf(wdir,dist,name,particle,description,index,authors,reference):
 
@@ -103,9 +103,31 @@ if __name__=='__main__':
         plot_Htildepi(args.directory,name,Q2=4.0,mode=0)
         plot_Htildepi(args.directory,name,Q2=4.0,mode=1)
 
+
+    #--generate Htildepi
+    elif args.function=='sivers':
+        dist = 'sivers'
+        name        = 'JAM22-sivers_lo'
+        particle    = '211'
+        description = '...' 
+        index       = '1'
+        authors     = '...'
+        reference   = '...'
+        info = {}
+        info['<description>'] = description
+        info['<index>']       = index
+        info['<authors>']     = authors
+        info['reference']     = reference
+
+        #gen_lhapdf(args.directory,dist,name,particle,description,index,authors,reference)   
+
+        plot_sivers(args.directory,name,Q2=4.0,mode=0)
+        plot_sivers(args.directory,name,Q2=4.0,mode=1)
+
+
     else:
         print('Function %s not available.'%args.function)
-        print('Available functions are transversity, collinspi, Htildepi')
+        print('Available functions are transversity, collinspi, Htildepi, sivers')
 
 
 

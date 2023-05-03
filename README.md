@@ -1,10 +1,11 @@
 # WormGearLHAPDF
 
-* To generate the LHAPDF files, use the command ```./genlhapdf -d results```
-* The resulting files will be stored in ```results/data``` (they have already been generated)
+* To generate the LHAPDF files, use the command ```./genlhapdf -d results -f function```
+* The resulting files will be stored in ```results/data```
+* The options for function are transversity, collinspi, Htildepi, and sivers
 * Note that index 0000 contains the mean value of the replicas.  Indices 0001 and above are the replicas.
 * Use ```./plot.py``` to load the LHAPDF files and generate the three plots below
-* The resulting plots will be stored in ```results/gallery``` (they have already been generated)
+* The resulting plots will be stored in ```results/gallery```
 * To learn how to load and use the distributions and widths, look at the functions within ```plot.py```
 
 

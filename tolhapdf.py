@@ -124,6 +124,7 @@ class QCF:
         if    dist=='transversity' : return self.gen_cj_grid()
         if    dist=='collinspi' :    return self.gen_cj_grid()
         if    dist=='Htildepi' :     return self.gen_cj_grid()
+        if    dist=='sivers' :       return self.gen_cj_grid()
     
     def _gen_table(self,dist):
     
@@ -147,7 +148,7 @@ class QCF:
             for ix in range(nx):
                 table[ 1].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[3])
                 table[ 2].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[1])
-                if dist in ['transversity']:
+                if dist in ['transversity','sivers']:
                     table[ 3].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[5])
                     table[-1].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[4])
                     table[-2].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[2])
@@ -315,6 +316,7 @@ class QCF:
 
         if dist=='transversity': self.widths_uv = []
         if dist=='collinspi':    self.widths_fav,self.widths_unf = [],[]
+        if dist=='sivers':       self.widths_uv = []
         for i in range(len(order)):
             if order[i][0] != 1: continue
             if order[i][1] != dist: continue
@@ -343,6 +345,8 @@ class QCF:
                 if dist=='collinspi':
                     self.widths_fav.append(par[fav_idx])
                     self.widths_unf.append(par[unf_idx])
+                if dist=='sivers':
+                    self.widths_uv.append(par[uv_idx])
                 cnt+=1
             print()
       
