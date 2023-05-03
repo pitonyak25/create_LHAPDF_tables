@@ -135,7 +135,8 @@ def plot_transversity(wdir,file_name,Q2,mode=0):
         u =  np.array([QCF[i].xfxQ2( 2,x,Q2) for x in X])
         data['d'].append(d)
         data['u'].append(u)
-        
+       
+
     for flav in data:
 
         if   flav=='u': ax = ax11
@@ -514,17 +515,17 @@ if __name__=="__main__":
     Q2 = 4.0
 
     #--plot transversity
-    #file_name = 'JAM22-transversity_proton_lo'
-    #plot_transversity(wdir,file_name,Q2,mode=0)
-    #plot_transversity(wdir,file_name,Q2,mode=1)
+    file_name = 'JAM22-transversity_proton_lo'
+    plot_transversity(wdir,file_name,Q2,mode=0)
+    plot_transversity(wdir,file_name,Q2,mode=1)
 
     ###--plot Collins pion
-    #file_name = 'JAM22-Collins_pion_lo'
-    #plot_collinspi(wdir,file_name,Q2,mode=0)
-    #plot_collinspi(wdir,file_name,Q2,mode=1)
+    file_name = 'JAM22-Collins_pion_lo'
+    plot_collinspi(wdir,file_name,Q2,mode=0)
+    plot_collinspi(wdir,file_name,Q2,mode=1)
 
     ##--plot widths for Collins pion
-    #plot_widths(wdir,file_name)
+    plot_widths(wdir,file_name)
 
     file_name = 'JAM22-Htilde_pion_lo'
     plot_Htildepi(wdir,file_name,Q2,mode=0)

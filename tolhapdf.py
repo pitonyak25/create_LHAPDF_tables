@@ -58,7 +58,7 @@ def write_lhapdf_conf(wdir):
     F.writelines(script)
     F.close()
     
-def rename_tables(self,wdir,dirname,newname):
+def rename_tables(wdir,dirname,newname):
 
     print('\nrenaming LHAPDF tables for %s to %s'%(dirname,newname))
     old = '%s/data/%s'%(wdir,dirname)
@@ -136,10 +136,22 @@ class QCF:
         #--fill table
         table={iflav:[]  for iflav in iflavs}  
         npts=nQ2*nx
+        #--note that one has the corresponding indices
+        #--u:   2 -> 1
+        #--ub: -2 -> 2
+        #--d:   1 -> 3
+        #--db: -1 -> 4
+        #--s:   2 -> 5
+        #--sb: -2 -> 6
         for iQ2 in range(nQ2):
             for ix in range(nx):
                 table[ 1].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[3])
                 table[ 2].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[1])
+                if dist in ['transversity']:
+                    table[ 3].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[5])
+                    table[-1].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[4])
+                    table[-2].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[2])
+                    table[-3].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[6])
                 if dist in ['collinspi','Htildepi']:
                     table[ 3].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[3])
                     table[-1].append(X[ix]*qpd.get_C(X[ix],Q2[iQ2])[1])
@@ -168,9 +180,10 @@ class QCF:
         line=''
         for _ in Q2: line+=('%10.5e '%_**0.5).upper()
         lines.append(line)
-        #lines.append('-5 -4 -3 -2 -1 1 2 3 4 5 21')
-        lines.append('1 2')
-   
+        line = ''
+        for i in iflavs: line += str(i) + ' '
+        lines.append(line)
+ 
         nx=len(X)
         nQ2=len(Q2)
     
@@ -211,7 +224,7 @@ class QCF:
         lines.append('NumMembers:      %d'%nrep)
         lines.append('Particle:        particle')
         #lines.append('Flavors:         [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 21]')
-        lines.append('Flavors:         [1, 2]')
+        lines.append('Flavors:         [1, 2, 3, -1, -2, -3]')
         lines.append('OrderQCD:        1')
         lines.append('FlavorScheme:    variable')
         lines.append('NumFlavors:      5')
@@ -585,6 +598,9 @@ class PARMAN:
                 elif 'sivers' in conf['params'][parkind][k]['fixed']:
                     ref_par = conf['params'][parkind][k]['fixed'].replace('sivers','').strip()
                     conf['params'][parkind][k]['value'] = conf['params']['sivers'][ref_par]['value']
+                elif '-' in conf['params'][parkind][k]['fixed']:
+                    ref_par = conf['params'][parkind][k]['fixed'].replace('-','').strip()
+                    conf['params'][parkind][k]['value'] = -conf['params'][parkind][ref_par]['value']
                 else:
                     ref_par = conf['params'][parkind][k]['fixed']
                     conf['params'][parkind][k]['value'] = conf['params'][parkind][ref_par]['value']
